@@ -56,7 +56,7 @@ def main():
     st.title("🐍 Python Code Editor")
 
     if 'code_editor' not in st.session_state:
-        st.session_state.code_editor = 'print("Hello, World!")'
+        st.session_state['code_editor'] = 'print("Hello, World!")'
 
     # Sidebar with examples
     with st.sidebar:
@@ -82,7 +82,8 @@ fibonacci(10)''',
 numbers = [64, 34, 25, 12, 22, 11, 90]
 print("Original array:", numbers)
 print("Sorted array:", bubble_sort(numbers.copy()))''',
-            "Level04: Bubble Sort": '''def bubble_sort(arr):
+            "Level04: Bubble Sort": '''# Bubble Sort Algorithm Example
+def bubble_sort(arr):
     n = len(arr)
     for i in range(n):
         for j in range(0, n-i-1):
@@ -90,6 +91,7 @@ print("Sorted array:", bubble_sort(numbers.copy()))''',
                 arr[j], arr[j+1] = arr[j+1], arr[j]
     return arr
 
+# Example usage
 numbers = [64, 34, 25, 12, 22, 11, 90]
 print("Original array:", numbers)
 print("Sorted array:", bubble_sort(numbers.copy()))''',
@@ -142,17 +144,19 @@ inorder(r)'''
 
         for label, example_code in examples.items():
             if st.button(label):
-                st.session_state.code_editor = example_code
+                st.session_state['code_editor'] = example_code
 
     # Main area with code editor and output
     col1, col2 = st.columns([2, 1])
 
     with col1:
         st.subheader("Code Editor")
-        
+
+        code = st.session_state['code_editor']
+
         if HAS_ACE:
             code = st_ace(
-                value=st.session_state.code,
+                value=code,
                 language='python',
                 theme='monokai',
                 height=400,
@@ -161,13 +165,12 @@ inorder(r)'''
         else:
             code = st.text_area(
                 "Python Code",
-                value=st.session_state.code,
+                value=code,
                 height=400,
                 key="code_editor"
             )
-        
-        code = st.text_area("", st.session_state.get("code_editor", 'print("Hello, World!")'), height=400, key="code_editor")
-        st.session_state.code = code
+
+        st.session_state['code_editor'] = code
 
         button_col1, button_col2 = st.columns(2)
 
