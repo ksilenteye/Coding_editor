@@ -156,11 +156,12 @@ inorder(r)'''
 
         if HAS_ACE:
             code = st_ace(
-                value=code,
+                value=st.session_state['code_editor'],
                 language='python',
                 theme='monokai',
                 height=400,
-                key="ace_editor"
+                key="code_editor"  # match the session state key!
+
             )
         else:
             code = st.text_area(
