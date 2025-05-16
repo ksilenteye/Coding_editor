@@ -153,13 +153,16 @@ inorder(r)'''
         st.subheader("Code Editor")
 
         if HAS_ACE:
-            st.session_state['code'] = st_ace(
+            code_input = st_ace(
                 value=st.session_state['code'],
                 language='python',
                 theme='monokai',
                 height=400,
-                key="code"
+                key="code_editor"
             )
+            if code_input is not None:
+                st.session_state['code'] = code_input
+
         else:
             st.text_area(
                 "Python Code",
