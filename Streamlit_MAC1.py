@@ -55,8 +55,8 @@ def execute_code(code):
 def main():
     st.title("🐍 Python Code Editor")
 
-    if 'code_editor' not in st.session_state:
-        st.session_state['code_editor'] = 'print("Hello, World!")'
+    if 'code' not in st.session_state:
+        st.session_state['code'] = 'print("Hello, World!")'
 
     # Sidebar with examples
     with st.sidebar:
@@ -144,7 +144,7 @@ inorder(r)'''
 
         for label, example_code in examples.items():
             if st.button(label):
-                st.session_state['code_editor'] = example_code
+                st.session_state['code'] = example_code
 
     # Main area with code editor and output
     col1, col2 = st.columns([2, 1])
@@ -152,31 +152,27 @@ inorder(r)'''
     with col1:
         st.subheader("Code Editor")
 
-        code = st.session_state['code_editor']
-
         if HAS_ACE:
-            code = st_ace(
-                value=code,
+            st.session_state['code'] = st_ace(
+                value=st.session_state['code'],
                 language='python',
                 theme='monokai',
                 height=400,
-                key="code_editor"  # 🔥 change this from "ace_editor"
+                key="code"
             )
-
         else:
-            code = st.text_area(
+            st.text_area(
                 "Python Code",
-                value=code,
+                value=st.session_state['code'],
                 height=400,
-                key="code_editor"
+                key="code"
             )
-
 
         button_col1, button_col2 = st.columns(2)
 
         with button_col1:
             if st.button("▶️ Run Code"):
-                output, error = execute_code(code)
+                output, error = execute_code(st.session_state['code'])
 
                 if error:
                     st.error(f"Error: {error}")
