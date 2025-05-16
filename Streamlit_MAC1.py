@@ -171,7 +171,6 @@ inorder(r)'''
                 key="code_editor"
             )
 
-        st.session_state['code_editor'] = code
 
         button_col1, button_col2 = st.columns(2)
 
