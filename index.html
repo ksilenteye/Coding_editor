@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Python Web Editor</title>
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1e1e1e;
+            color: #ffffff;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .main-container {
+            display: flex;
+            gap: 20px;
+        }
+        .editor-container {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .code-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .sidebar {
+            flex: 1;
+            background-color: #2d2d2d;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 800px;
+            overflow-y: auto;
+        }
+        .CodeMirror {
+            height: 400px !important;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .error-line {
+            background-color: rgba(255, 0, 0, 0.2);
+        }
+        .error-widget {
+            background-color: #2d2d2d;
+            border-left: 3px solid #ff6b6b;
+            padding: 8px;
+            margin: 5px 0;
+        }
+        .suggestion-widget {
+            background-color: #2d2d2d;
+            border-left: 3px solid #4CAF50;
+            padding: 8px;
+            margin: 5px 0;
+        }
+        #output {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            background-color: #2d2d2d;
+            color: #ffffff;
+            font-family: 'Consolas', monospace;
+            border-radius: 8px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            border: 1px solid #3d3d3d;
+        }
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+        }
+        .error {
+            color: #ff6b6b;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        select {
+            padding: 8px;
+            border-radius: 4px;
+            background-color: #2d2d2d;
+            color: white;
+            border: 1px solid #3d3d3d;
+        }
+        .examples-list {
+            margin-top: 10px;
+        }
+        .example-item {
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            background-color: #3d3d3d;
+        }
+        .example-item:hover {
+            background-color: #4d4d4d;
+        }
+        .keyboard-shortcuts {
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+        .shortcut {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .shortcut-key {
+            background-color: #3d3d3d;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        #aiHelperPanel {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #2d2d2d;
+            border-radius: 8px;
+        }
+        .suggestion-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0;
+        }
+        .suggestion-item {
+            padding: 8px;
+            margin: 5px 0;
+            background-color: #3d3d3d;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .suggestion-item:hover {
+            background-color: #4d4d4d;
+        }
+        #errorExplanation {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #3d3d3d;
+            border-radius: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-code"></i> Enhanced Python Editor</h1>
+        <div class="controls">
+            <select id="themeSelect" onchange="changeTheme()">
+                <option value="dracula">Dracula Theme</option>
+                <option value="monokai">Monokai Theme</option>
+                <option value="default">Default Theme</option>
+            </select>
+            <button onclick="clearOutput()">
+                <i class="fas fa-eraser"></i> Clear Output
+            </button>
+            <button onclick="saveCode()">
+                <i class="fas fa-save"></i> Save Code
+            </button>
+            <button onclick="loadCode()">
+                <i class="fas fa-folder-open"></i> Load Code
+            </button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="editor-container">
+            <div class="code-section">
+                <div id="editor"></div>
+                <div class="action-bar">
+                    <button id="runButton" onclick="executeCode()">
+                        <i class="fas fa-play"></i> Run Code (Ctrl + Enter)
+                    </button>
+                    <button id="explainButton" onclick="explainCode()">
+                        <i class="fas fa-question-circle"></i> Explain Code
+                    </button>
+                    <button id="fixButton" onclick="fixCode()" style="display: none;">
+                        <i class="fas fa-wrench"></i> Fix Error
+                    </button>
+                </div>
+                <div id="errorExplanation"></div>
+    <div id="output"></div>
+            </div>
+        </div>
+        
+        <div class="sidebar">
+            <div id="aiHelperPanel">
+                <h3><i class="fas fa-robot"></i> AI Assistant</h3>
+                <div id="suggestions" class="suggestion-list"></div>
+            </div>
+
+            <h3><i class="fas fa-lightbulb"></i> Example Scripts</h3>
+            <div class="examples-list">
+                <div class="example-item" onclick="loadExample('hello')">Hello World</div>
+                <div class="example-item" onclick="loadExample('fibonacci')">Fibonacci Sequence</div>
+                <div class="example-item" onclick="loadExample('sorting')">Sorting Algorithm</div>
+            </div>
+            
+            <div class="keyboard-shortcuts">
+                <h3><i class="fas fa-keyboard"></i> Keyboard Shortcuts</h3>
+                <div class="shortcut">
+                    <span>Run Code</span>
+                    <span class="shortcut-key">Ctrl + Enter</span>
+                </div>
+                <div class="shortcut">
+                    <span>Save Code</span>
+                    <span class="shortcut-key">Ctrl + S</span>
+                </div>
+                <div class="shortcut">
+                    <span>Clear Output</span>
+                    <span class="shortcut-key">Ctrl + L</span>
+                </div>
+                <div class="shortcut">
+                    <span>Explain Code</span>
+                    <span class="shortcut-key">Ctrl + E</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CodeMirror JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+
+    <script>
+        // Initialize CodeMirror
+        const editor = CodeMirror(document.getElementById('editor'), {
+            mode: 'python',
+            theme: 'dracula',
+            lineNumbers: true,
+            autoCloseBrackets: true,
+            matchBrackets: true,
+            indentUnit: 4,
+            tabSize: 4,
+            indentWithTabs: false,
+            extraKeys: {
+                'Ctrl-Enter': executeCode,
+                'Ctrl-S': saveCode,
+                'Ctrl-L': clearOutput,
+                'Ctrl-E': explainCode
+            }
+        });
+
+        // Set initial code
+        editor.setValue('print("Hello, World!")');
+
+        // Example scripts
+        const examples = {
+            hello: 'print("Hello, World!")\nname = input("What is your name? ")\nprint(f"Nice to meet you, {name}!")',
+            fibonacci: 'def fibonacci(n):\n    a, b = 0, 1\n    for _ in range(n):\n        print(a, end=" ")\n        a, b = b, a + b\n\nfibonacci(10)',
+            sorting: 'def bubble_sort(arr):\n    n = len(arr)\n    for i in range(n):\n        for j in range(0, n-i-1):\n            if arr[j] > arr[j+1]:\n                arr[j], arr[j+1] = arr[j+1], arr[j]\n    return arr\n\nnumbers = [64, 34, 25, 12, 22, 11, 90]\nprint("Original array:", numbers)\nprint("Sorted array:", bubble_sort(numbers.copy()))'
+        };
+
+        function loadExample(type) {
+            editor.setValue(examples[type]);
+        }
+
+        function changeTheme() {
+            const theme = document.getElementById('themeSelect').value;
+            editor.setOption('theme', theme);
+        }
+
+        // Error handling and highlighting
+        function highlightError(lineNo) {
+            editor.addLineClass(lineNo - 1, 'background', 'error-line');
+        }
+
+        function clearErrorHighlighting() {
+            for (let i = 0; i < editor.lineCount(); i++) {
+                editor.removeLineClass(i, 'background', 'error-line');
+            }
+        }
+
+        function getFriendlyErrorMessage(error) {
+            const commonErrors = {
+                'SyntaxError: invalid syntax': 'Check your syntax. You might be missing a colon, parenthesis, or have incorrect indentation.',
+                'IndentationError': 'Check your indentation. Python is sensitive to spacing.',
+                'NameError': 'You\'re trying to use a variable or function that hasn\'t been defined.',
+                'TypeError': 'You\'re trying to perform an operation on incompatible types.',
+                'ZeroDivisionError': 'You\'re trying to divide by zero.',
+            };
+
+            for (const [errorType, message] of Object.entries(commonErrors)) {
+                if (error.includes(errorType)) {
+                    return message;
+                }
+            }
+
+            return error;
+        }
+
+        async function executeCode() {
+            const runButton = document.getElementById('runButton');
+            const outputDiv = document.getElementById('output');
+            const fixButton = document.getElementById('fixButton');
+            
+            clearErrorHighlighting();
+            runButton.disabled = true;
+            outputDiv.textContent = 'Running...';
+            
+            try {
+                const response = await fetch('/execute', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                },
+                    body: JSON.stringify({
+                        code: editor.getValue()
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    const friendlyError = getFriendlyErrorMessage(data.error);
+                    outputDiv.innerHTML = `<span class="error">Error: ${friendlyError}</span>`;
+                    
+                    // Extract line number from error message if available
+                    const lineMatch = data.error.match(/line (\d+)/);
+                    if (lineMatch) {
+                        highlightError(parseInt(lineMatch[1]));
+                    }
+                    
+                    fixButton.style.display = 'inline-flex';
+                    showErrorExplanation(data.error);
+                } else {
+                    outputDiv.textContent = data.output || 'No output';
+                    fixButton.style.display = 'none';
+                    hideErrorExplanation();
+                }
+            } catch (error) {
+                outputDiv.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+                console.error('Error details:', error);
+            } finally {
+                runButton.disabled = false;
+            }
+        }
+
+        function showErrorExplanation(error) {
+            const explanationDiv = document.getElementById('errorExplanation');
+            explanationDiv.style.display = 'block';
+            explanationDiv.innerHTML = `
+                <h4>Error Explanation:</h4>
+                <p>${getFriendlyErrorMessage(error)}</p>
+                <div class="suggestion-widget">
+                    <strong>Suggestion:</strong>
+                    <p>Try these fixes:</p>
+                    <ul>
+                        ${generateSuggestions(error).map(s => `<li>${s}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+
+        function hideErrorExplanation() {
+            const explanationDiv = document.getElementById('errorExplanation');
+            explanationDiv.style.display = 'none';
+        }
+
+        function generateSuggestions(error) {
+            const suggestions = {
+                'SyntaxError': [
+                    'Add a colon (:) at the end of control statements',
+                    'Check for matching parentheses ()',
+                    'Check for matching quotes',
+                    'Verify proper indentation'
+                ],
+                'IndentationError': [
+                    'Use 4 spaces for each indentation level',
+                    'Make sure all code blocks are properly indented',
+                    'Check for mixed tabs and spaces'
+                ],
+                'NameError': [
+                    'Define the variable before using it',
+                    'Check for typos in variable names',
+                    'Import required modules'
+                ],
+                'TypeError': [
+                    'Convert types explicitly using str(), int(), etc.',
+                    'Check if you\'re using the right type of variable',
+                    'Verify function parameters'
+                ]
+            };
+
+            for (const [errorType, fixes] of Object.entries(suggestions)) {
+                if (error.includes(errorType)) {
+                    return fixes;
+                }
+            }
+
+            return ['Review the code logic', 'Add print statements to debug', 'Check documentation'];
+        }
+
+        function explainCode() {
+            const code = editor.getSelection() || editor.getValue();
+            const outputDiv = document.getElementById('output');
+            outputDiv.textContent = 'Analyzing code...';
+
+            // Here you would typically call your AI service
+            // For now, we'll just provide a simple explanation
+            const explanation = analyzeCode(code);
+            outputDiv.innerHTML = `<div class="suggestion-widget">
+                <strong>Code Explanation:</strong>
+                <p>${explanation}</p>
+            </div>`;
+        }
+
+        function analyzeCode(code) {
+            // Simple code analysis - in a real implementation, this would use an AI service
+            if (code.includes('print(')) {
+                return 'This code uses the print() function to display text or values to the console/output. Print statements are commonly used for outputting information to users or debugging.';
+            } else if (code.includes('def ')) {
+                return 'This code defines a function. Functions are reusable blocks of code that perform specific tasks.';
+            } else if (code.includes('for ')) {
+                return 'This code contains a loop that repeats a set of instructions.';
+            } else if (code.includes('if ')) {
+                return 'This code makes decisions using conditional statements.';
+            } else {
+                return 'This code performs basic operations and calculations.';
+            }
+        }
+
+        function fixCode() {
+            // In a real implementation, this would use an AI service to suggest fixes
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML += `<div class="suggestion-widget">
+                <strong>Suggested Fix:</strong>
+                <p>Here's how you might fix the error:</p>
+                <pre>${generateExample()}</pre>
+            </div>`;
+        }
+
+        function generateExample() {
+            return 'def example():\n    print("This is a corrected example")\n\nexample()';
+        }
+
+        function clearOutput() {
+            document.getElementById('output').textContent = '';
+            hideErrorExplanation();
+        }
+
+        function saveCode() {
+            const code = editor.getValue();
+            const blob = new Blob([code], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'python_code.py';
+            a.click();
+        }
+
+        function loadCode() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.py';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    editor.setValue(e.target.result);
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                saveCode();
+            } else if (e.ctrlKey && e.key === 'l') {
+                e.preventDefault();
+                clearOutput();
+            }
+        });
+    </script>
+</body>
+</html>
