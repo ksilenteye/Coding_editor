@@ -61,7 +61,6 @@ def main():
     if 'example_display' not in st.session_state:
         st.session_state['example_display'] = ''
 
-    # Example scripts dictionary
     examples = {
         "Level01: Hello World": 'print("Hello, World!")',
         "Level02: Fibonacci": '''def fibonacci(n):
@@ -165,34 +164,26 @@ inorder(r)'''
                 key="code_editor"
             )
 
-        # Run button and output
+        # Run code button
         if st.button("▶️ Run Code"):
             output, error = execute_code(st.session_state['code'])
 
-            if output:
-                st.code(output, language="text")
             if error:
                 st.error(f"Error: {error}")
+            else:
+                st.success("Code executed successfully!")
+                st.code(output, language="text")
 
-        st.markdown("---")
-        st.subheader("💡 Example Scripts")
+        # Horizontal example buttons
+        st.markdown("### 🔽 Example Scripts")
+        example_cols = st.columns(len(examples))
+        for i, (label, example_code) in enumerate(examples.items()):
+            if example_cols[i].button(label):
+                st.session_state['example_display'] = example_code
 
-        # Horizontal layout for buttons
-        example_keys = list(examples.keys())
-        row_len = 4  # Number of buttons per row
-        for i in range(0, len(example_keys), row_len):
-            cols = st.columns(row_len)
-            for j in range(row_len):
-                if i + j < len(example_keys):
-                    label = example_keys[i + j]
-                    with cols[j]:
-                        if st.button(label, key=label):
-                            st.session_state['example_display'] = examples[label]
-                            st.session_state['code'] = examples[label]
-
-        # Selected Example Display
+        # Selected Example Script Display
         if st.session_state['example_display']:
-            st.markdown("### Selected Example Code")
+            st.markdown("### 📜 Selected Example Script")
             st.code(st.session_state['example_display'], language='python')
 
     with col2:
@@ -201,19 +192,20 @@ inorder(r)'''
         ### Instructions
         1. Write or paste your Python code in the editor
         2. Click "Run Code" to execute
-        3. Click any Example Script to load and view it
-        4. See output below the editor
+        3. Click any Example Script to view it
 
         ### Features
         - Safe execution environment
-        - Example scripts
-        - Real-time output display
+        - Code explanation
+        - Example scripts in sidebar
+        - Real-time output
 
         ### Tips
-        - Use print() for visible output
-        - Copy useful examples
-        - Keep your code formatted
+        - Use print() to see output
+        - Check example scripts for inspiration
+        - Clear formatting is maintained
         """)
+
 
 if __name__ == "__main__":
     main()
