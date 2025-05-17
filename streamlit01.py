@@ -1,87 +1,32 @@
 import streamlit as st
-import sys
-from io import StringIO
+from streamlit_ace import st_ace
+import io
 import contextlib
-import traceback
-import autopep8
 
-st.set_page_config(page_title="Python Code Editor", layout="wide")
+st.set_page_config(layout="wide")
+st.title("🐍 Python Code Editor")
 
-# Try to import streamlit-ace, use fallback if not available
-try:
-    from streamlit_ace import st_ace
-    HAS_ACE = True
-except ImportError:
-    HAS_ACE = False
-
-def create_safe_globals():
-    safe_globals = {
-        '__builtins__': {
-            'print': print,
-            'len': len,
-            'range': range,
-            'str': str,
-            'int': int,
-            'float': float,
-            'list': list,
-            'dict': dict,
-            'set': set,
-            'tuple': tuple,
-            'sum': sum,
-            'min': min,
-            'max': max,
-            'enumerate': enumerate,
-            'zip': zip,
-            'type': type,
-            'chr': chr,
-            'ord': ord,
-        }
-    }
-    return safe_globals
-
-def execute_code(code):
-    output = StringIO()
-    error = None
-
-    try:
-        with contextlib.redirect_stdout(output):
-            safe_globals = create_safe_globals()
-            exec(code, safe_globals, {})
-        return output.getvalue(), None
-    except Exception as e:
-        error = f"{type(e).__name__}: {str(e)}"
-        return output.getvalue(), error
-
-def main():
-    st.title("🐍 Python Code Editor")
-
-    if 'code' not in st.session_state:
-        st.session_state['code'] = 'print("Hello, World!")'
-
-    if 'example_display' not in st.session_state:
-        st.session_state['example_display'] = ''
-
-    examples = {
-        "Level01: Hello World": 'print("Hello, World!")',
-        "Level02: Fibonacci": '''def fibonacci(n):
+# Example Scripts
+example_scripts = {
+    "Level01: Hello World": 'print("Hello, World!")',
+    "Level02: Fibonacci": '''
+def fibonacci(n):
     a, b = 0, 1
     for _ in range(n):
         print(a, end=" ")
         a, b = b, a + b
 
-fibonacci(10)''',
-        "Level03: Sorting": '''def bubble_sort(arr):
-    n = len(arr)
-    for i in range(n):
-        for j in range(0, n-i-1):
-            if arr[j] > arr[j+1]:
-                arr[j], arr[j+1] = arr[j+1], arr[j]
-    return arr
+fibonacci(10)
+''',
+    "Level03: Sorting": '''
+def sort_example():
+    arr = [5, 2, 9, 1]
+    arr.sort()
+    print("Sorted:", arr)
 
-numbers = [64, 34, 25, 12, 22, 11, 90]
-print("Original array:", numbers)
-print("Sorted array:", bubble_sort(numbers.copy()))''',
-        "Level04: Bubble Sort": '''# Bubble Sort Algorithm Example
+sort_example()
+''',
+    "Level04: Bubble Sort": '''
 def bubble_sort(arr):
     n = len(arr)
     for i in range(n):
@@ -90,122 +35,60 @@ def bubble_sort(arr):
                 arr[j], arr[j+1] = arr[j+1], arr[j]
     return arr
 
-# Example usage
 numbers = [64, 34, 25, 12, 22, 11, 90]
 print("Original array:", numbers)
-print("Sorted array:", bubble_sort(numbers.copy()))''',
-        "Level05: Prime no": '''def is_prime(n):
-    if n < 2:
-        return False
-    for i in range(2, int(n**0.5)+1):
-        if n % i == 0:
-            return False
-    return True
+print("Sorted array:", bubble_sort(numbers.copy()))
+'''
+}
 
-for i in range(20):
-    if is_prime(i):
-        print(i, end=" ")''',
-        "Level06: Tower of Hanoi": '''def hanoi(n, source, target, auxiliary):
-    if n == 1:
-        print(f"Move disk 1 from {source} to {target}")
-        return
-    hanoi(n-1, source, auxiliary, target)
-    print(f"Move disk {n} from {source} to {target}")
-    hanoi(n-1, auxiliary, target, source)
+# State init
+if "selected_script" not in st.session_state:
+    st.session_state.selected_script = list(example_scripts.values())[0]
 
-hanoi(3, 'A', 'C', 'B')''',
-        "Level07: Object-Oriented": '''class Person:
-    def __init__(self, name):
-        self.name = name
+# Layout
+editor_col, help_col = st.columns([3, 1])
 
-    def greet(self):
-        print(f"Hello, my name is {self.name}.")
+with editor_col:
+    code = st_ace(
+        value=st.session_state.selected_script,
+        language="python",
+        theme="monokai",
+        key="editor"
+    )
 
-p = Person("Alice")
-p.greet()''',
-        "Level08: Binary Search Tree": '''class Node:
-    def __init__(self, key):
-        self.left = None
-        self.right = None
-        self.val = key
+    run = st.button("▶️ Run Code")
 
-def inorder(root):
-    if root:
-        inorder(root.left)
-        print(root.val, end=" ")
-        inorder(root.right)
+    output = ""
 
-r = Node(50)
-r.left = Node(30)
-r.right = Node(70)
-inorder(r)'''
-    }
+    if run:
+        with io.StringIO() as buf, contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
+            try:
+                exec(code, {})
+            except Exception as e:
+                print(f"Error: {e}")
+            output = buf.getvalue()
 
-    col1, col2 = st.columns([2, 1])
+    if run:
+        st.success("Code executed successfully!")
+        st.code(output or "No output", language="text")
 
-    with col1:
-        st.subheader("Code Editor")
+    # ↓ Below the output: Example scripts as horizontal list
+    st.markdown("### 📜 Example Scripts")
+    cols = st.columns(len(example_scripts))
+    for i, (name, script) in enumerate(example_scripts.items()):
+        if cols[i].button(name):
+            st.session_state.selected_script = script
+            st.rerun()
 
-        if HAS_ACE:
-            code_input = st_ace(
-                value=st.session_state['code'],
-                language='python',
-                theme='monokai',
-                height=400,
-                key="code_editor"
-            )
-            if code_input is not None:
-                st.session_state['code'] = code_input
-        else:
-            st.session_state['code'] = st.text_area(
-                "Python Code",
-                value=st.session_state['code'],
-                height=400,
-                key="code_editor"
-            )
+    # ↓ Below horizontal buttons: show currently selected code
+    st.markdown("### 🔍 Selected Example Script")
+    st.code(st.session_state.selected_script, language="python")
 
-        # Run code button
-        if st.button("▶️ Run Code"):
-            code_to_run = code_input if code_input is not None else st.session_state['code']
-            output, error = execute_code(code_to_run)
-
-
-            if error:
-                st.error(f"Error: {error}")
-            else:
-                st.success("Code executed successfully!")
-                st.code(output, language="text")
-
-        # Horizontal example buttons
-        st.markdown("### 🔽 Example Scripts")
-        example_cols = st.columns(len(examples))
-        for i, (label, example_code) in enumerate(examples.items()):
-            if example_cols[i].button(label):
-                st.session_state['example_display'] = example_code
-
-        # Selected Example Script Display
-        if st.session_state['example_display']:
-            st.markdown("### 📜 Selected Example Script")
-            st.code(st.session_state['example_display'], language='python')
-
-    with col2:
-        st.subheader("Help")
-        st.markdown("""
-        ### Instructions
-        1. Write or paste your Python code in the editor
-        2. Click "Run Code" to execute
-        3. Click any Example Script to view it
-
-        ### Features
-        - Safe execution environment
-        - Code explanation
-        - Example scripts in sidebar
-        - Real-time output
-
-        ### Tips
-        - Use print() to see output
-        - Check example scripts for inspiration
-        - Clear formatting is maintained
-        """)
-if __name__ == "__main__":
-    main()
+with help_col:
+    st.markdown("### Help")
+    st.markdown("""
+    - Write code above ☝️
+    - Click **Run Code** ▶️ to execute
+    - Choose scripts below to auto-load them
+    - Use `print()` to show output
+    """)
