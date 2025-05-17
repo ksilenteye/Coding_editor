@@ -166,7 +166,9 @@ inorder(r)'''
 
         # Run code button
         if st.button("▶️ Run Code"):
-            output, error = execute_code(st.session_state['code'])
+            code_to_run = code_input if code_input is not None else st.session_state['code']
+            output, error = execute_code(code_to_run)
+
 
             if error:
                 st.error(f"Error: {error}")
