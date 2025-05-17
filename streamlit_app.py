@@ -52,7 +52,7 @@ editor_col, help_col = st.columns([3, 1])
 
 with editor_col:
     st.markdown("### 🖊️ Code Editor")
-    st.session_state.editor_code = st_ace(
+    editor_content = st_ace(
         value=st.session_state.editor_code,
         language="python",
         theme="monokai",
@@ -65,7 +65,7 @@ with editor_col:
     if run:
         with io.StringIO() as buf, contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
             try:
-                exec(st.session_state.editor_code, {})
+                exec(editor_content, {})
             except Exception as e:
                 print(f"Error: {e}")
             output = buf.getvalue()
