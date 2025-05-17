@@ -205,3 +205,5 @@ inorder(r)'''
         - Check example scripts for inspiration
         - Clear formatting is maintained
         """)
+if __name__ == "__main__":
+    main()
